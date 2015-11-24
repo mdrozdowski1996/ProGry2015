@@ -29,6 +29,7 @@ public:
 
 	void display();
 	bool readFromFile(const std::string &fileName);
+	bool onlyOneHero() const;
 
 private:
 	int cols_;
@@ -100,6 +101,20 @@ std::istream & operator >>(std::istream &is, Level &level)
 	return is;
 }
 
+bool Level::onlyOneHero() const
+{
+	int countHeroes = 0;
+
+	for (int i = 0; i < rows_; i++) {
+		for (int j = 0; j < cols_; j++) {
+			if (data_[cols_ * i + j] == Hero)
+				countHeroes++;
+		}
+	}
+
+	return countHeroes == 1;
+}
+
 int main()
 {
 	Level level;
@@ -112,6 +127,7 @@ int main()
 	std::cin >> level;
 	level.display();
 
+//	std::cout << level.onlyOneHero() << "\n";
 
 	return 0;
 }
