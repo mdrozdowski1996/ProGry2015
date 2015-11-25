@@ -29,8 +29,9 @@ public:
 
 	void display();
 	bool readFromFile(const std::string &fileName);
-	bool onlyOneHero() const;
 
+	bool onlyOneHero() const;
+	bool moveHero(int a, int b);
 private:
 	int cols_;
 	int rows_;
@@ -102,19 +103,77 @@ bool Level::onlyOneHero() const
 	return countHeroes == 1;
 }
 
+bool Level::moveHero(int a, int b)
+{
+	if (data_[a] != Hero || data_[b] != Floor) //for now assuming walking on floor only
+		return false;
+
+	data_[a] = Floor;
+	data_[b] = Hero;
+
+	return true;
+}
+
+class Player {
+public:
+	int pos() const;
+
+	void setPos(int position);
+
+private:
+	int pos_;
+};
+
+int Player::pos() const
+{
+	return pos_;
+}
+
+void Player::setPos(int position)
+{
+	pos_ = position;
+}
+
 int main()
 {
 	Level level;
 
-// 	level.readFromFile("lev.txt");
+	level.readFromFile("lev.txt");
 
-// 	std::ifstream input("lev.txt");
-// 	input >> level;
+	Player player;
+	player.setPos(level.cols() + 1);//for now @ has to be top left in lev.txt
 
-	std::cin >> level;
+	std::cout << "Simple game loop, wsad - moving, q - quit\n";
 	level.display();
 
-//	std::cout << level.onlyOneHero() << "\n";
+	while (true) {
+		char c;
+		std::cin >> c;
+		int posOffset = 0;
+		switch (c) {
+			case 'q': //TODO autosave on quit
+				return 0;
+			case 'w':
+				posOffset = -level.cols();
+				break;
+			case 's':
+				posOffset = +level.cols();
+				break;
+			case 'a':
+				posOffset = -1;
+				break;
+			case 'd':
+				posOffset = +1;
+				break;
+		}
+		if (posOffset != 0) {
+			if (level.moveHero(player.pos(), player.pos() + posOffset))
+				player.setPos(player.pos() + posOffset);
+			else
+			;	//TODO not valid move
+		}
+		level.display();
+	}
 
 	return 0;
 }
