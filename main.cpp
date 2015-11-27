@@ -63,20 +63,7 @@ bool Level::readFromFile(const std::string &fileName)
 		return false;
 	}
 
-	fileStream >> rows_ >> cols_;
-
-	fileStream >> std::noskipws;
-	data_ = new char[rows_ * cols_];
-
-	char c;
-	while (std::isspace(fileStream.peek()))
-		fileStream >> c;
-
-	for (int i = 0; i < rows_; ++i) {
-		fileStream.read(data_ + i * cols_, cols_);
-		while (std::isspace(fileStream.peek()))
-			fileStream >> c;
-	}
+	fileStream >> (*this);
 
 	return true;
 }
