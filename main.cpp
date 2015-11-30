@@ -6,11 +6,9 @@
 @ - hero
 # - wall
 . - floor
-
 ##########
 #........#
 #........#
-
 */
 
 // using namespace std;
@@ -23,10 +21,11 @@ const char Floor = '.';
 
 class Level {
 	friend std::istream & operator >>(std::istream &is, Level &level);
+	friend std::ostream & operator <<(std::ostream &os, Level &level);
 public:
 	int cols() const;
 	int rows() const;
-
+	int heroPos() const;
 	void display();
 	bool readFromFile(const std::string &fileName);
 
@@ -35,6 +34,7 @@ public:
 private:
 	int cols_;
 	int rows_;
+	int heroPos_;
 	char *data_;
 };
 
@@ -46,6 +46,11 @@ int Level::cols() const
 int Level::rows() const
 {
 	return rows_;
+}
+
+int Level::heroPos() const
+{
+	return heroPos_;
 }
 
 void Level::display()
@@ -71,7 +76,7 @@ bool Level::readFromFile(const std::string &fileName)
 
 std::istream & operator >>(std::istream &is, Level &level)
 {
-	is >> level.rows_ >> level.cols_;
+	is >> level.rows_ >> level.cols_ >> level.heroPos_;
 
 	is >> std::noskipws;
 	level.data_ = new char[level.rows_ * level.cols_];
@@ -87,6 +92,17 @@ std::istream & operator >>(std::istream &is, Level &level)
 	}
 
 	return is;
+}
+
+std::ostream & operator <<(std::ostream &os, Level &level)
+{
+	os << level.rows_ << " " << level.cols_ << " " << level.heroPos_ << '\n';
+	for (int i = 0; i < level.rows_ ; ++i) {
+		os.write(level.data_ + i * level.cols_, level.cols_);
+		os << '\n';
+	}
+
+	return os;
 }
 
 bool Level::onlyOneHero() const
@@ -137,7 +153,6 @@ void Player::setPos(int position)
 int main()
 {
 	Level level;
-
 	level.readFromFile("lev.txt");
 
 	Player player;
@@ -151,8 +166,11 @@ int main()
 		std::cin >> c;
 		int posOffset = 0;
 		switch (c) {
-			case 'q': //TODO autosave on quit
+			case 'q': {
+				std::ofstream save("save.txt");
+				save << level;
 				return 0;
+			}
 			case 'w':
 				posOffset = -level.cols();
 				break;
