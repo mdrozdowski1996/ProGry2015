@@ -1,0 +1,79 @@
+General suggestion: when in doubt, look for examples of similar code
+already present in repository.
+
+[Language]
+- C++11
+- No fancy template metaprogramming. In general, use straightforward
+  inheritance instead of nifty static inheritance on templates (like
+  the curiously recurring template pattern).
+- Prefer composition over inheritance. Inheritance should be public.
+- Error handling will be handled using error codes returned from functions,
+  not exceptions.
+- Const-correctness is Important[TM].
+- Use consts instead of preprocessor #define statements.
+- In general, try to keep things simple.
+
+[Naming]
+- Names will by written in English using camelCase notation for variables,
+  local const-variables, functions and methods; use CamelCase notation for
+  type names, global consts, namespaces.
+- Names should be descriptive, modern editors have working auto-complete
+  to ease typing those long names. At the same time, don't fall into verbosity
+  trap. Names such as tmp or idx are perfectly fine. No need for index or
+  temporaryVariable. It doesn't add any value.
+
+[Coding style]
+- Place spaces around binary operators.
+- Pointers and references bind to the right side, therefore:
+
+int *a, *b;
+char &c;
+std::string * someFunction(const std::string &strRef);
+
+- Indent code using tabulators, not spaces, BUT! don't assume and depend
+  on the width of tabulator. Therefore, don't try and create ASCII-art code
+  blocks using tab. It's acceptable to mix some tabs at the start of the line
+  and add spaces after to get pretty indented lines. Like this:
+
+void aLongFunctionName(int someVeryLongArgumentName,
+                       int anotherAbsurdlyLongArgumentName,
+                       int omgImGoingToScrewThisCode)
+
+  If you don't want to be bothered with such prettifying, indenting broken
+  lines with single tab is also OK:
+
+void aLongFunctionName(int someVeryLongArgumentName,
+	int anotherAbsurdlyLongArgumentName,
+	int omgImGoingToScrewThisCode)
+
+  HINT: use an editor which shows tab markers. kate and derivatives are nice.
+
+- Don't leave dangling whitespace. Again, using a sensible editor helps.
+- No hard limit on line length (especially because we don't assume tab width),
+  but be reasonable and use common sense.
+- When starting a function definition, place opening brace on the next line.
+- For all other purposes, place opening brace on the same line as loop
+  or condition statement or type definition.
+- Omit braces for one-line code blocks in loops and conditions. BUT! if one
+  of the branches of condition needs braces, place them everywhere in this
+  condition. For examples: google "linux kernel coding style".
+- Place space between if, while, do and similar keywords and the following
+  parentheses. Don't place such spaces in function calls:
+
+if (something) {
+	bool flag = doThings();
+	while (flag)
+		flag = doMoreThings();
+}
+
+- Don't place multiple statements in a single line.
+- Place space after comma symbol, just like in natural language.
+- Likewise for semicolon if it does not end a line, e.g. in for-loop
+  statements:
+
+for (int i = 0; i < n; ++i)
+
+[Git commit style]
+- In general, commit messages are written as one-line general description,
+  an empty line and longer description if needed.
+- Lines in commit message must not exceed 76 characters.
