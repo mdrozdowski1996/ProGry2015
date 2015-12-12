@@ -12,8 +12,6 @@
 #........#
 */
 
-// using namespace std;
-
 const char Hero = '@';
 const char Wall = '#';
 const char Floor = '.';
@@ -177,15 +175,35 @@ public:
 			for (int j = 0; j < cols_; j++)
 				canvas_[i * cols_ + j] = Wall;
 
-		int currRow, currCol;
+		int prevCol, prevRow, currRow, currCol;
 
-		for (int i = 0; i < 10; i++)
-		{
+		for (int i = 0; i < 10; i++) {
+			prevRow = currRow;
+			prevCol = currCol;
+
 			currRow = rand() % (rows_ - 2) + 1;
 			currCol = rand() % (cols_ - 2) + 1;
-			createRectangularRoom(currRow, currCol, rand() % 7 + 3, rand() % 7 + 3);
+			int height = rand() % 7 + 3;
+			int width = rand() % 7 + 3;
+			createRectangularRoom(currRow, currCol, width, height);
+
+			// Brutally add corridors
+			int dir;
+			if (i > 0) {
+				dir = prevRow > currRow ? -1 : 1;
+				while (prevRow != currRow) {
+					prevRow += dir;
+					canvas_[prevRow * cols_ + prevCol] = Floor;
+				}
+				dir = prevCol > currCol ? -1 : 1;
+				while (prevCol != currCol) {
+					prevCol += dir;
+					canvas_[prevRow * cols_ + prevCol] = Floor;
+				}
+			}
 		}
 
+		canvas_[prevRow * cols_ + prevCol] = Hero;
 		return Level(canvas_, rows_, cols_);
 	}
 
