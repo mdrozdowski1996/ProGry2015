@@ -189,8 +189,10 @@ public:
 			prevRow = currRow;
 			prevCol = currCol;
 
-			currRow = rand() % (rows_ - 2) + 1;
-			currCol = rand() % (cols_ - 2) + 1;
+			currRow = rand() % (rows_ / 2 - 1);
+			currRow = currRow * 2 + 1;
+			currCol = rand() % (cols_ / 2 - 1);
+			currCol = currRow * 2 + 1;
 			int height = rand() % 7 + 3;
 			int width = rand() % 7 + 3;
 			createRectangularRoom(currRow, currCol, width, height);
@@ -200,16 +202,30 @@ public:
 			int dir;
 			if (i > 0) {
 				dir = prevRow > currRow ? -1 : 1;
+
+				// Horizontal
 				while (prevRow != currRow) {
 					prevRow += dir;
-					if (canvas_[prevRow * cols_ + prevCol] == Wall)
-						canvas_[prevRow * cols_ + prevCol] = Corridor;
+					int tmp = prevRow * cols_ + prevCol;
+					if (canvas_[tmp] == Wall) {
+						if (canvas_[tmp - 1] != Floor && canvas_[tmp + 1] != Floor)
+							canvas_[tmp] = Corridor;
+						else
+							canvas_[tmp] = Floor;
+					}
 				}
+
+				// Vertical
 				dir = prevCol > currCol ? -1 : 1;
 				while (prevCol != currCol) {
 					prevCol += dir;
-					if (canvas_[prevRow * cols_ + prevCol] == Wall)
-						canvas_[prevRow * cols_ + prevCol] = Corridor;
+					int tmp = prevRow * cols_ + prevCol;
+					if (canvas_[tmp] == Wall) {
+						if (canvas_[tmp - cols_] != Floor && canvas_[tmp + cols_] != Floor)
+							canvas_[tmp] = Corridor;
+						else
+							canvas_[tmp] = Floor;
+					}
 				}
 			}
 		}
@@ -255,17 +271,41 @@ private:
 	void createDoors()
 	{
 		std::vector<int> doors;
+		std::vector<int> clear;
 		for (int i = 0; i < cols_ * rows_; ++i) {
 			int adjacent = 0;
 			for (auto direction : ortogonalDirections()) {
 				if (i + direction >= 0 && i + direction <= cols_ * rows_ && canvas_[i + direction] == Corridor)
 					adjacent++;
 			}
-			if (adjacent == 1 && canvas_[i] == Corridor)
-				doors.push_back(i);
+
+			if (canvas_[i] == Corridor) {
+				if (adjacent == 1)
+					doors.push_back(i);
+				else if (adjacent == 0)
+					clear.push_back(i);
+			}
 		}
-		for (auto i : doors)
-			canvas_[i] = Door;
+
+		for (auto i : clear) {
+			// Adjacent rooms with really short corridor
+			if (canvas_[i + 1] == canvas_[i - 1])
+				doors.push_back(i);
+			else
+				canvas_[i] = Floor;
+		}
+
+		for (auto i : doors) {
+			// Additional check for corridors crossing in a room
+			int adjacent = 0;
+			for (auto direction : ortogonalDirections()) {
+				if (canvas_[direction + i] == Floor || canvas_[direction + i] == Corridor)
+					adjacent++;
+			}
+
+			if (adjacent < 3)
+				canvas_[i] = Door;
+		}
 	}
 
 	void clearCorridors()
