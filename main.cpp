@@ -1,8 +1,10 @@
+#include <array>
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 /*
 @ - hero
 # - wall
@@ -15,19 +17,21 @@
 const char Hero = '@';
 const char Wall = '#';
 const char Floor = '.';
+const char Door = '+';
 
 //const-correctness!
 
+class MapGenerator;
+
 class Level {
+	friend class MapGenerator;
 	friend std::istream & operator >>(std::istream &is, Level &level);
 	friend std::ostream & operator <<(std::ostream &os, Level &level);
 public:
-	Level() = default;
-	Level(char *data, int rows, int cols);
 
 	int cols() const;
 	int rows() const;
-	int heroPos() const;
+	int heroStartPos() const;
 	void display();
 	bool readFromFile(const std::string &fileName);
 
@@ -35,9 +39,13 @@ public:
 	bool moveHero(int a, int b);
 
 private:
+
+	Level() = default;
+	Level(char *data, int rows, int cols);
+
 	int cols_;
 	int rows_;
-	int heroPos_;
+	int heroStartPos_;
 	char *data_;
 };
 
@@ -56,9 +64,9 @@ int Level::rows() const
 	return rows_;
 }
 
-int Level::heroPos() const
+int Level::heroStartPos() const
 {
-	return heroPos_;
+	return heroStartPos_;
 }
 
 void Level::display()
@@ -84,7 +92,7 @@ bool Level::readFromFile(const std::string &fileName)
 
 std::istream & operator >>(std::istream &is, Level &level)
 {
-	is >> level.rows_ >> level.cols_ >> level.heroPos_;
+	is >> level.rows_ >> level.cols_ >> level.heroStartPos_;
 
 	is >> std::noskipws;
 	level.data_ = new char[level.rows_ * level.cols_];
@@ -104,7 +112,7 @@ std::istream & operator >>(std::istream &is, Level &level)
 
 std::ostream & operator <<(std::ostream &os, Level &level)
 {
-	os << level.rows_ << " " << level.cols_ << " " << level.heroPos_ << '\n';
+	os << level.rows_ << " " << level.cols_ << " " << level.heroStartPos_ << '\n';
 	for (int i = 0; i < level.rows_ ; ++i) {
 		os.write(level.data_ + i * level.cols_, level.cols_);
 		os << '\n';
@@ -188,26 +196,51 @@ public:
 			createRectangularRoom(currRow, currCol, width, height);
 
 			// Brutally add corridors
+
 			int dir;
 			if (i > 0) {
 				dir = prevRow > currRow ? -1 : 1;
 				while (prevRow != currRow) {
 					prevRow += dir;
-					canvas_[prevRow * cols_ + prevCol] = Floor;
+					if (canvas_[prevRow * cols_ + prevCol] == Wall)
+						canvas_[prevRow * cols_ + prevCol] = Corridor;
 				}
 				dir = prevCol > currCol ? -1 : 1;
 				while (prevCol != currCol) {
 					prevCol += dir;
-					canvas_[prevRow * cols_ + prevCol] = Floor;
+					if (canvas_[prevRow * cols_ + prevCol] == Wall)
+						canvas_[prevRow * cols_ + prevCol] = Corridor;
 				}
 			}
 		}
 
+		createDoors();
+
+		clearCorridors();
+
 		canvas_[prevRow * cols_ + prevCol] = Hero;
-		return Level(canvas_, rows_, cols_);
+		Level result(canvas_, rows_, cols_);
+		result.heroStartPos_ = prevRow * cols_ + prevCol;
+		return result;
 	}
 
 private:
+
+	static const char Corridor = 'C';
+
+	char *canvas_;
+	int rows_;
+	int cols_;
+
+	inline std::array<int, 8> directions() const
+	{
+		return std::array<int, 8> {{-1, 1, cols_, -cols_, 1-cols_, 1+cols_, -1-cols_, -1+cols_}};
+	}
+	inline std::array<int, 4> ortogonalDirections() const
+	{
+		return std::array<int, 4> {{-1, 1, cols_, -cols_}};
+	}
+
 	void createRectangularRoom(int posCol, int posRow, int width, int height)
 	{
 		width  = std::min(width, cols_ - posRow - 1);
@@ -219,20 +252,37 @@ private:
 				canvas_[i * cols_ + j] = Floor;
 	}
 
-	char *canvas_;
-	int rows_;
-	int cols_;
+	void createDoors()
+	{
+		std::vector<int> doors;
+		for (int i = 0; i < cols_ * rows_; ++i) {
+			int adjacent = 0;
+			for (auto direction : ortogonalDirections()) {
+				if (i + direction >= 0 && i + direction <= cols_ * rows_ && canvas_[i + direction] == Corridor)
+					adjacent++;
+			}
+			if (adjacent == 1 && canvas_[i] == Corridor)
+				doors.push_back(i);
+		}
+		for (auto i : doors)
+			canvas_[i] = Door;
+	}
 
+	void clearCorridors()
+	{
+		for (int i = 0; i < cols_* rows_; ++i)
+			if (canvas_[i] == Corridor)
+				canvas_[i] = Floor;
+	}
 };
 
 int main()
 {
-	Level level;
 	MapGenerator gen;
-	level = gen.createLevel();
+	Level level = gen.createLevel();
 
 	Player player;
-	player.setPos(level.cols() + 1);//for now @ has to be top left in lev.txt
+	player.setPos(level.heroStartPos());
 
 	std::cout << "Simple game loop, wsad - moving, q - quit\n";
 	level.display();
