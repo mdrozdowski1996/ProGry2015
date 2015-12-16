@@ -38,6 +38,7 @@ public:
 	bool onlyOneHero() const;
 	bool moveHero(int a, int b);
 
+	bool canSee(int posA, int posB) const;
 private:
 
 	Level() = default;
@@ -143,6 +144,38 @@ bool Level::moveHero(int a, int b)
 	data_[a] = Floor;
 	data_[b] = Hero;
 
+	return true;
+}
+
+bool Level::canSee(int posA, int posB) const
+{
+	int aCol = posA % cols_;
+	int aRow = posA / cols_;
+	int bCol = posB % cols_;
+	int bRow = posB / cols_;
+	int deltaCol = bCol - aCol;
+	int deltaRow = bRow - aRow;
+	int deltaColSign = (deltaCol > 0) - (deltaCol < 0);
+	int deltaRowSign = (deltaRow > 0) - (deltaRow < 0);
+	std::vector<int> vec;
+
+	if (deltaCol == 0)
+		for (int row = aRow + deltaRowSign; row != bRow; row += deltaRowSign)
+			vec.push_back((row * cols_) + aCol);
+	else if (abs(deltaCol) >= abs(deltaRow))
+		for (int col = deltaColSign; col + aCol != bCol; col += deltaColSign) {
+			int calcRow = (2 * col * deltaRow + (deltaRowSign * deltaCol)) / (2 * deltaCol) + aRow;
+			vec.push_back(calcRow * cols_ + aCol + col);
+		}
+	else
+		for (int row = deltaRowSign; row + aRow != bRow; row += deltaRowSign) {
+			int calcCol = (2 * row * deltaCol + (deltaColSign * deltaRow)) / (2 * deltaRow) + aCol;
+			vec.push_back((row + aRow) * cols_ + calcCol);
+		}
+
+	for (int i : vec)
+		if (data_[i] != Floor)
+			return false;
 	return true;
 }
 
@@ -348,6 +381,14 @@ int main()
 				break;
 			case 'd':
 				posOffset = +1;
+				break;
+			case 't': //canSee test
+				int a,b;
+				std::cin >> a >> b;
+				if (level.canSee(a * level.cols() + b, player.pos()))
+					printf("widać\n");
+				else
+					printf("nie widać\n");
 				break;
 		}
 		if (posOffset != 0) {
