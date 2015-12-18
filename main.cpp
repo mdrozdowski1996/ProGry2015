@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <cstdlib>
 #include <ctime>
@@ -5,6 +6,7 @@
 #include <iostream>
 #include <ncurses.h>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 /*
@@ -52,19 +54,21 @@ class Level {
 	friend class MapGenerator;
 	friend std::istream & operator >>(std::istream &is, Level &level);
 	friend std::ostream & operator <<(std::ostream &os, Level &level);
+
 public:
+	std::unordered_map<int, Creature *> creatures;
 
 	int cols() const;
 	int rows() const;
 	int heroStartPos() const;
-	void display();
+	void display() const;
 	bool readFromFile(const std::string &fileName);
 
-	bool moveHero(int a, int b);
+	char operator[](int index) const;
 
 	bool canSee(int posA, int posB) const;
-private:
 
+private:
 	Level() = default;
 	Level(char *data, int rows, int cols);
 
@@ -77,6 +81,14 @@ private:
 Level::Level(char *data, int rows, int cols)
 	: cols_(cols), rows_(rows), data_(data)
 {
+}
+
+char Level::operator[](int index) const
+{
+	if (creatures.find(index) != creatures.end())
+		return Hero;
+	else
+		return data_[index];
 }
 
 int Level::cols() const
@@ -94,7 +106,7 @@ int Level::heroStartPos() const
 	return heroStartPos_;
 }
 
-void Level::display()
+void Level::display() const
 {
 	for (int i = 0; i < rows_; ++i) {
 		for (int j = 0; j < cols_; ++j)
@@ -146,14 +158,85 @@ std::ostream & operator <<(std::ostream &os, Level &level)
 	return os;
 }
 
-bool Level::moveHero(int a, int b)
+class Game {
+public:
+	static inline std::array<int, 8> directions(int rowsize);
+	static inline std::array<int, 4> ortogonalDirections(int rowsize);
+
+	Game(Level);
+
+	void setLevel(Level &&);
+	const Player & getPlayer() const;
+	void displayLevel() const;
+
+	bool moveCreature(const Creature &creature, int offset);
+
+private:
+	Player player_;
+	Level level_;
+	inline std::array<int, 8> directions();
+	inline std::array<int, 4> ortogonalDirections();
+};
+
+Game::Game(Level level) : level_(level)
 {
-	if (data_[a] != Hero || data_[b] != Floor) //for now assuming walking on floor only
+	player_.setPos(level.heroStartPos());
+	level_.creatures[player_.pos()] = &player_;
+}
+
+inline std::array<int, 8> Game::directions(int rowsize)
+{
+	return std::array<int, 8> {{-1, 1, rowsize, -rowsize, 1 - rowsize, 1 + rowsize, -1 - rowsize, -1 + rowsize}};
+}
+
+inline std::array<int, 4> Game::ortogonalDirections(int rowsize)
+{
+	return std::array<int, 4> {{-1, 1, rowsize, -rowsize}};
+}
+
+inline std::array<int, 8> Game::directions()
+{
+	return directions(level_.cols());
+}
+
+inline std::array<int, 4> Game::ortogonalDirections()
+{
+	return ortogonalDirections(level_.cols());
+}
+
+void Game::setLevel(Level &&level)
+{
+	level_ = level;
+}
+
+void Game::displayLevel() const
+{
+	level_.display();
+}
+
+const Player & Game::getPlayer() const
+{
+	return player_;
+}
+
+bool Game::moveCreature(const Creature &creature, int offset)
+{
+	// For now movement allowance equals 1
+	if (std::find(directions().begin(), directions().end(), offset) == directions().end())
 		return false;
 
-	data_[a] = Floor;
-	data_[b] = Hero;
+	int from = creature.pos();
+	int to = from + offset;
 
+	if (level_.creatures.find(from) == level_.creatures.end())
+		return false;
+
+	if (level_[to] == Wall)
+		return false;
+
+	level_.creatures[to] = level_.creatures[from];
+	level_.creatures[to]->setPos(to);
+	level_.creatures.erase(level_.creatures.find(from));
 	return true;
 }
 
@@ -257,28 +340,17 @@ public:
 
 		clearCorridors();
 
-		canvas_[prevRow * cols_ + prevCol] = Hero;
 		Level result(canvas_, rows_, cols_);
 		result.heroStartPos_ = prevRow * cols_ + prevCol;
 		return result;
 	}
 
 private:
-
 	static const char Corridor = 'C';
 
 	char *canvas_;
 	int rows_;
 	int cols_;
-
-	inline std::array<int, 8> directions() const
-	{
-		return std::array<int, 8> {{-1, 1, cols_, -cols_, 1-cols_, 1+cols_, -1-cols_, -1+cols_}};
-	}
-	inline std::array<int, 4> ortogonalDirections() const
-	{
-		return std::array<int, 4> {{-1, 1, cols_, -cols_}};
-	}
 
 	void createRectangularRoom(int posCol, int posRow, int width, int height)
 	{
@@ -321,6 +393,7 @@ private:
 		for (auto i : doors) {
 			// Additional check for corridors crossing in a room
 			int adjacent = 0;
+
 			for (auto direction : ortogonalDirections()) {
 				if (canvas_[direction + i] == Floor || canvas_[direction + i] == Corridor)
 					adjacent++;
@@ -337,6 +410,16 @@ private:
 			if (canvas_[i] == Corridor)
 				canvas_[i] = Floor;
 	}
+
+	inline std::array<int, 8> directions()
+	{
+		return Game::directions(cols_);
+	}
+
+	inline std::array<int, 4> ortogonalDirections()
+	{
+		return Game::ortogonalDirections(cols_);
+	}
 };
 
 int main()
@@ -346,11 +429,12 @@ int main()
 	MapGenerator gen;
 	Level level = gen.createLevel();
 
-	Player player;
-	player.setPos(level.heroStartPos());
+	Game game(level);
 
 	std::cout << "Simple game loop, wsad - moving, q - quit\n";
-	level.display();
+	game.displayLevel();
+
+	const Player &player = game.getPlayer();
 
 	while (true) {
 		char c;
@@ -385,12 +469,10 @@ int main()
 				break;
 		}
 		if (posOffset != 0) {
-			if (level.moveHero(player.pos(), player.pos() + posOffset))
-				player.setPos(player.pos() + posOffset);
-			else
+			if (!game.moveCreature(player, posOffset))
 			;	//TODO not valid move
 		}
-		level.display();
+		game.displayLevel();
 	}
 	endwin();
 	return 0;
