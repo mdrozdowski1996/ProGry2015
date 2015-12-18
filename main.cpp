@@ -37,7 +37,6 @@ public:
 	void display();
 	bool readFromFile(const std::string &fileName);
 
-	bool onlyOneHero() const;
 	bool moveHero(int a, int b);
 
 	bool canSee(int posA, int posB) const;
@@ -122,20 +121,6 @@ std::ostream & operator <<(std::ostream &os, Level &level)
 	}
 
 	return os;
-}
-
-bool Level::onlyOneHero() const
-{
-	int countHeroes = 0;
-
-	for (int i = 0; i < rows_; i++) {
-		for (int j = 0; j < cols_; j++) {
-			if (data_[cols_ * i + j] == Hero)
-				countHeroes++;
-		}
-	}
-
-	return countHeroes == 1;
 }
 
 bool Level::moveHero(int a, int b)
