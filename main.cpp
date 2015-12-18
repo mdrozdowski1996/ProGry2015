@@ -25,6 +25,29 @@ const char Door = '+';
 
 class MapGenerator;
 
+class Creature {
+public:
+	int pos() const;
+
+	void setPos(int position);
+
+private:
+	int pos_;
+};
+
+int Creature::pos() const
+{
+	return pos_;
+}
+
+void Creature::setPos(int position)
+{
+	pos_ = position;
+}
+
+class Player : public Creature {
+};
+
 class Level {
 	friend class MapGenerator;
 	friend std::istream & operator >>(std::istream &is, Level &level);
@@ -164,26 +187,6 @@ bool Level::canSee(int posA, int posB) const
 		if (data_[i] != Floor)
 			return false;
 	return true;
-}
-
-class Player {
-public:
-	int pos() const;
-
-	void setPos(int position);
-
-private:
-	int pos_;
-};
-
-int Player::pos() const
-{
-	return pos_;
-}
-
-void Player::setPos(int position)
-{
-	pos_ = position;
 }
 
 class MapGenerator {
