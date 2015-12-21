@@ -66,6 +66,7 @@ public:
 
 	char operator[](int index) const;
 
+	std::vector<int> lineFromTo(int posA, int posB) const;
 	bool canSee(int posA, int posB) const;
 
 private:
@@ -240,7 +241,7 @@ bool Game::moveCreature(const Creature &creature, int offset)
 	return true;
 }
 
-bool Level::canSee(int posA, int posB) const
+std::vector<int> Level::lineFromTo(int posA, int posB) const
 {
 	int aCol = posA % cols_;
 	int aRow = posA / cols_;
@@ -266,6 +267,12 @@ bool Level::canSee(int posA, int posB) const
 			vec.push_back((row + aRow) * cols_ + calcCol);
 		}
 
+	return vec;
+}
+
+bool Level::canSee(int posA, int posB) const
+{
+	std::vector<int> vec = lineFromTo(posA, posB);
 	for (int i : vec)
 		if (data_[i] != Floor)
 			return false;
