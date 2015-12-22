@@ -3,8 +3,10 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <ncurses.h>
 #include <string>
 #include <vector>
+
 /*
 @ - hero
 # - wall
@@ -73,8 +75,8 @@ int Level::heroStartPos() const
 void Level::display()
 {
 	for (int i = 0; i < rows_; ++i) {
-		std::cout.write(data_ + i * cols_, cols_);
-		std::cout << '\n';
+		for (int j = 0; j < cols_; ++j)
+			mvaddch(i, j, data_[i * cols_ + j]);
 	}
 }
 
@@ -351,6 +353,8 @@ private:
 
 int main()
 {
+	initscr();
+	noecho();
 	MapGenerator gen;
 	Level level = gen.createLevel();
 
@@ -362,12 +366,13 @@ int main()
 
 	while (true) {
 		char c;
-		std::cin >> c;
+		c = getch();
 		int posOffset = 0;
 		switch (c) {
 			case 'q': {
 				std::ofstream save("save.txt");
 				save << level;
+				endwin();
 				return 0;
 			}
 			case 'w':
@@ -383,12 +388,12 @@ int main()
 				posOffset = +1;
 				break;
 			case 't': //canSee test
-				int a,b;
-				std::cin >> a >> b;
-				if (level.canSee(a * level.cols() + b, player.pos()))
-					printf("widać\n");
+				move(level.rows(), 0);
+				refresh();
+				if (level.canSee(level.heroStartPos(), player.pos()))
+					printf("widać ze startu    \n");
 				else
-					printf("nie widać\n");
+					printf("nie widać ze startu\n");
 				break;
 		}
 		if (posOffset != 0) {
@@ -399,6 +404,6 @@ int main()
 		}
 		level.display();
 	}
-
+	endwin();
 	return 0;
 }
