@@ -110,7 +110,7 @@ void Level::display() const
 {
 	for (int i = 0; i < rows_; ++i) {
 		for (int j = 0; j < cols_; ++j)
-			mvaddch(i, j, data_[i * cols_ + j]);
+			mvaddch(i, j, this->operator[](i * cols_ + j));
 	}
 }
 
