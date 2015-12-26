@@ -68,6 +68,7 @@ public:
 
 	std::vector<int> lineFromTo(int posA, int posB) const;
 	bool canSee(int posA, int posB) const;
+	int nextStepPos(int posA, int posB) const;
 
 private:
 	Level() = default;
@@ -164,6 +165,18 @@ bool Level::canSee(int posA, int posB) const
 		if (data_[i] != Floor)
 			return false;
 	return true;
+}
+
+int Level::nextStepPos(int posA, int posB) const
+{
+	std::vector<int> vec = lineFromTo(posA, posB);
+	if (vec.empty())
+		if (posA == posB)
+			return -1;
+		else
+			return posB;
+	else
+		return vec.front();
 }
 
 std::istream & operator >>(std::istream &is, Level &level)
