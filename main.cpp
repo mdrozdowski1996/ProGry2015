@@ -218,7 +218,7 @@ public:
 	Game(Level);
 
 	void setLevel(Level &&);
-	const Player & getPlayer() const;
+	const Player & player() const;
 	void displayLevel() const;
 
 	bool moveCreature(const Creature &creature, int offset);
@@ -266,7 +266,7 @@ void Game::displayLevel() const
 	level_.display();
 }
 
-const Player & Game::getPlayer() const
+const Player & Game::player() const
 {
 	return player_;
 }
@@ -454,7 +454,7 @@ int main()
 	std::cout << "Simple game loop, wsad - moving, q - quit\n";
 	game.displayLevel();
 
-	const Player &player = game.getPlayer();
+	const Player &player = game.player();
 
 	while (true) {
 		char c;
