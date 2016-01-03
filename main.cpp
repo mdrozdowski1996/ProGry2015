@@ -66,7 +66,9 @@ public:
 
 	char operator[](int index) const;
 
+	std::vector<int> lineFromTo(int posA, int posB) const;
 	bool canSee(int posA, int posB) const;
+	int nextStepPos(int posA, int posB) const;
 
 private:
 	Level() = default;
@@ -125,6 +127,56 @@ bool Level::readFromFile(const std::string &fileName)
 	fileStream >> (*this);
 
 	return true;
+}
+
+std::vector<int> Level::lineFromTo(int posA, int posB) const
+{
+	int aCol = posA % cols_;
+	int aRow = posA / cols_;
+	int bCol = posB % cols_;
+	int bRow = posB / cols_;
+	int deltaCol = bCol - aCol;
+	int deltaRow = bRow - aRow;
+	int deltaColSign = (deltaCol > 0) - (deltaCol < 0);
+	int deltaRowSign = (deltaRow > 0) - (deltaRow < 0);
+	std::vector<int> vec;
+
+	if (deltaCol == 0)
+		for (int row = aRow + deltaRowSign; row != bRow; row += deltaRowSign)
+			vec.push_back((row * cols_) + aCol);
+	else if (abs(deltaCol) >= abs(deltaRow))
+		for (int col = deltaColSign; col + aCol != bCol; col += deltaColSign) {
+			int calcRow = (2 * col * deltaRow + (deltaRowSign * deltaCol)) / (2 * deltaCol) + aRow;
+			vec.push_back(calcRow * cols_ + aCol + col);
+		}
+	else
+		for (int row = deltaRowSign; row + aRow != bRow; row += deltaRowSign) {
+			int calcCol = (2 * row * deltaCol + (deltaColSign * deltaRow)) / (2 * deltaRow) + aCol;
+			vec.push_back((row + aRow) * cols_ + calcCol);
+		}
+
+	return vec;
+}
+
+bool Level::canSee(int posA, int posB) const
+{
+	std::vector<int> vec = lineFromTo(posA, posB);
+	for (int i : vec)
+		if (data_[i] != Floor)
+			return false;
+	return true;
+}
+
+int Level::nextStepPos(int posA, int posB) const
+{
+	std::vector<int> vec = lineFromTo(posA, posB);
+	if (vec.empty())
+		if (posA == posB)
+			return -1;
+		else
+			return posB;
+	else
+		return vec.front();
 }
 
 std::istream & operator >>(std::istream &is, Level &level)
@@ -237,38 +289,6 @@ bool Game::moveCreature(const Creature &creature, int offset)
 	level_.creatures[to] = level_.creatures[from];
 	level_.creatures[to]->setPos(to);
 	level_.creatures.erase(level_.creatures.find(from));
-	return true;
-}
-
-bool Level::canSee(int posA, int posB) const
-{
-	int aCol = posA % cols_;
-	int aRow = posA / cols_;
-	int bCol = posB % cols_;
-	int bRow = posB / cols_;
-	int deltaCol = bCol - aCol;
-	int deltaRow = bRow - aRow;
-	int deltaColSign = (deltaCol > 0) - (deltaCol < 0);
-	int deltaRowSign = (deltaRow > 0) - (deltaRow < 0);
-	std::vector<int> vec;
-
-	if (deltaCol == 0)
-		for (int row = aRow + deltaRowSign; row != bRow; row += deltaRowSign)
-			vec.push_back((row * cols_) + aCol);
-	else if (abs(deltaCol) >= abs(deltaRow))
-		for (int col = deltaColSign; col + aCol != bCol; col += deltaColSign) {
-			int calcRow = (2 * col * deltaRow + (deltaRowSign * deltaCol)) / (2 * deltaCol) + aRow;
-			vec.push_back(calcRow * cols_ + aCol + col);
-		}
-	else
-		for (int row = deltaRowSign; row + aRow != bRow; row += deltaRowSign) {
-			int calcCol = (2 * row * deltaCol + (deltaColSign * deltaRow)) / (2 * deltaRow) + aCol;
-			vec.push_back((row + aRow) * cols_ + calcCol);
-		}
-
-	for (int i : vec)
-		if (data_[i] != Floor)
-			return false;
 	return true;
 }
 
